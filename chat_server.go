@@ -35,6 +35,7 @@ func handleConnection(conn net.Conn) {
 		r, err := conn.Read(buffer)
 		if err != nil {
 			fmt.Println("Error Reading", err)
+			return
 		}
 
 		data := buffer[:r]
