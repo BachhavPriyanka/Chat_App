@@ -2,13 +2,25 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"net"
 	"os"
 )
 
+const (
+	DefaultPort     = "8080"
+	DefaultProtocol = "tcp"
+	DefaultServerIp = "127.0.0.1"
+)
+
 func main() {
-	conn, err := net.Dial("tcp", ":8080")
+	port := flag.String("port", DefaultPort, "the port to use for chat server")
+	protocol := flag.String("protocol", DefaultProtocol, "the protocol to use for chat server")
+	serverip := flag.String("server", DefaultServerIp, "the address of server")
+
+	flag.Parse()
+	conn, err := net.Dial(*protocol, *serverip+":"+*port)
 	if err != nil {
 		fmt.Println("Error in network", err)
 	}

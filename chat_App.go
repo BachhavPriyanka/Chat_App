@@ -2,49 +2,73 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"net"
-	"os"
+	"strings"
+)
+
+const (
+	DefaultPort     = "8080"
+	DefaultProtocol = "tcp"
+	DefaultServerIP = "127.0.0.1"
+)
+
+var (
+	connections []net.Conn
 )
 
 func main() {
-	conn, err := net.Listen("tcp", ":8080")
+	port := flag.String("port", DefaultPort, "the port is used to chat server")
+	protocol := flag.String("protocol", DefaultProtocol, "the protocol is used for chat server")
+	serverip := flag.String("serverip", DefaultServerIP, "the address of server")
+	flag.Parse()
+
+	ln, err := net.Listen(*protocol, *serverip+":"+*port)
 	if err != nil {
 		fmt.Println("Error in network", err)
 	}
-	defer conn.Close()
+	defer ln.Close()
 
 	for {
-		ln, err := conn.Accept()
+		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Println("Error Accepting Connection", err)
 			return
 		}
-		go handleConnection(ln)
+		fmt.Println(conn.RemoteAddr())
+		connections = append(connections, conn)
+		go handleConnection(conn)
 	}
 }
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	reader := bufio.NewReader(conn)
-	readerOS := bufio.NewReader(os.Stdin)
-
 	for {
-		msg, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Error in reading", err)
-			return
-		}
-		fmt.Println("client -->", msg)
 
-		fmt.Println("Enter message :")
-		serverMsg, err := readerOS.ReadString('\n')
+		message, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
-			fmt.Println("Error", err)
+
+			for i, c := range connections {
+				if c == conn {
+					connections = append(connections[:i], connections[i+1:]...)
+
+					break
+				}
+			}
 			return
 		}
-		conn.Write([]byte("Server --> " + serverMsg))
+
+		message = strings.TrimSpace(message)
+
+		for _, c := range connections {
+
+			if c != conn {
+				fmt.Fprintln(c, message)
+
+			}
+		}
 	}
 
 }
