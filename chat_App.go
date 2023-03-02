@@ -25,10 +25,13 @@ func main() {
 	flag.Parse()
 
 	ln, err := net.Listen(*protocol, *serverip+":"+*port)
+	//	ln, err := net.Listen("tcp ", ":8080")
 	if err != nil {
 		fmt.Println("Error in network", err)
 	}
 	defer ln.Close()
+
+	fmt.Println("Server started. Listening on", *serverip+":"+*port)
 
 	for {
 		conn, err := ln.Accept()
@@ -36,7 +39,7 @@ func main() {
 			fmt.Println("Error Accepting Connection", err)
 			return
 		}
-		fmt.Println(conn.RemoteAddr())
+		fmt.Println("New client connected:", conn.RemoteAddr())
 		connections = append(connections, conn)
 		go handleConnection(conn)
 	}
@@ -46,14 +49,12 @@ func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
 	for {
-
 		message, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
-
+			fmt.Println("Connection closed:", conn.RemoteAddr())
 			for i, c := range connections {
 				if c == conn {
 					connections = append(connections[:i], connections[i+1:]...)
-
 					break
 				}
 			}
@@ -63,10 +64,8 @@ func handleConnection(conn net.Conn) {
 		message = strings.TrimSpace(message)
 
 		for _, c := range connections {
-
 			if c != conn {
 				fmt.Fprintln(c, message)
-
 			}
 		}
 	}
