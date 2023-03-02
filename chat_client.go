@@ -26,18 +26,18 @@ func main() {
 	}
 	defer conn.Close()
 
-	msgChan := make(chan string)
+	serverMsgChan := make(chan string)
 	clientMsgChan := make(chan string)
 
 	go func() {
-		recivedserverbuffer := make([]byte, 1024)
+		recivedServerBuffer := make([]byte, 1024)
 		for {
-			n, err := conn.Read(recivedserverbuffer)
+			n, err := conn.Read(recivedServerBuffer)
 			if err != nil {
 				fmt.Println("Error receiving message:", err)
 				continue
 			}
-			msgChan <- string(recivedserverbuffer[:n])
+			serverMsgChan <- string(recivedServerBuffer[:n])
 		}
 	}()
 
@@ -57,7 +57,7 @@ func main() {
 		fmt.Print("Enter message: ")
 		fmt.Println()
 		select {
-		case msg := <-msgChan:
+		case msg := <-serverMsgChan:
 			fmt.Println("Received message:", msg)
 		case clientMsg := <-clientMsgChan:
 			_, err = conn.Write([]byte(clientMsg))
