@@ -17,13 +17,15 @@ const (
 )
 
 var (
-	connections []net.Conn
-	users       = make(map[string]string)
-
+	connections    []net.Conn
+	users          = make(map[string]string)
 	usersconnected = make(map[string]net.Conn)
 )
 
 func main() {
+
+	//TODO:: Need to add the password hashing functionality
+
 	// sample data for map
 	users["anushka"] = "virat"
 	port := flag.String("port", DefaultPort, "the port to use for the chat server")
@@ -250,7 +252,6 @@ func handleCommand(conn net.Conn, command string, username string) error {
 		_, err := conn.Write([]byte(fmt.Sprintf("Invalid command: %s\n", command)))
 		return err
 	}
-
 	return nil
 }
 
@@ -301,6 +302,7 @@ func sendPrivateMessage(conn net.Conn, command string, username string) {
 }
 
 func notifyClients(message string, sender string) {
+
 	for _, conn := range connections {
 		if usersconnected[sender] == conn {
 			continue
