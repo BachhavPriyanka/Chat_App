@@ -67,7 +67,7 @@ func handleClient(conn net.Conn) {
 
 	usersconnected[username] = conn
 	fmt.Println(usersconnected)
-	fmt.Println("username is ", username)
+	fmt.Println("connected user : ", username)
 
 	notifyClients(fmt.Sprintf("%s has joined the chat.\n", username), username)
 
@@ -321,15 +321,11 @@ func sendPrivateMessage(conn net.Conn, command string, username string) {
 }
 
 func notifyClients(message string, sender string) {
-
-	for _, conn := range connections {
-		if usersconnected[sender] == conn {
-			continue
-		}
-
-		_, err := conn.Write([]byte(message))
-		if err != nil {
-			fmt.Println("Error sending message:", err)
+	for username, conn := range usersconnected {
+		if username != sender {
+			writer := bufio.NewWriter(conn)
+			writer.WriteString(message)
+			writer.Flush()
 		}
 	}
 }
