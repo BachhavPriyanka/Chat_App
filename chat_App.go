@@ -9,6 +9,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -24,7 +26,8 @@ var (
 
 func main() {
 
-	//TODO:: Need to add the password hashing functionality
+	//TODO:: Need to add the password hashing functionality :: done
+	//TODO:: Need to add the timeout functionality for connected clients
 
 	// sample data for map
 	users["anushka"] = "virat"
@@ -126,9 +129,16 @@ func register(conn net.Conn, reader *bufio.Reader, writer *bufio.Writer) (string
 	}
 	password = strings.TrimSpace(password)
 
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
 	// Add the new user to the map
-	users[username] = password
-	fmt.Println("User insise register", users)
+	users[username] = string(hashedPassword)
+
+	fmt.Println("Registered Users:", users)
 
 	_, err = writer.WriteString("Successfully registered. Please log in.\n")
 	if err != nil {
@@ -166,15 +176,24 @@ func login(conn net.Conn, reader *bufio.Reader, writer *bufio.Writer) (string, e
 		return "", errors.New("username and password cannot be empty")
 	}
 
-	for savedusername, savedpassword := range users {
-		if savedusername == username && savedpassword == password {
-			if err := prompt(writer, "Login successful!\n"); err != nil {
-				return "", err
-			}
-			return username, nil
-		}
+	// Look up the user in the map
+	hashedPassword, ok := users[username]
+	if !ok {
+		return "", fmt.Errorf("user %s not found", username)
 	}
 
+	// Compare the hashed password with the entered password
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
+		return "", fmt.Errorf("invalid password for user %s", username)
+	}
+
+	if err := prompt(writer, "Login successful!\n"); err != nil {
+		return "", err
+	}
+
+	usersconnected[username] = conn
+	fmt.Println(usersconnected)
+	fmt.Println("username is ", username)
 	return username, nil
 }
 
